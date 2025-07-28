@@ -212,6 +212,22 @@ export class GoogleDriveService {
     }
   }
 
+  // Get file metadata from Google Drive
+  async getFileMetadata(fileId: string) {
+    try {
+      const response = await this.drive.files.get({
+        fileId,
+        fields:
+          "id,name,size,mimeType,webViewLink,webContentLink,createdTime,modifiedTime",
+      });
+
+      console.log("📋 Retrieved file metadata:", response.data.name);
+      return response.data;
+    } catch (error) {
+      this.handleError(error, "get file metadata");
+    }
+  }
+
   // Upload PDF specifically with better handling for large files
   async uploadPDF(fileBuffer: Buffer, fileName: string, accessToken: string) {
     try {

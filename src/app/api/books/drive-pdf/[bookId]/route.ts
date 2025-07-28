@@ -11,12 +11,6 @@ export async function GET(
   { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.accessToken) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     const { bookId } = await params;
 
     // Connect to database and get book info
@@ -35,13 +29,41 @@ export async function GET(
       );
     }
 
-    // Verify user has access to this book
-    if (book.userId !== session.user?.email && !book.isPublic) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    // For public books, no authentication required
+    if (!book.isPublic) {
+      const session = await getServerSession(authOptions);
+
+      if (!session?.accessToken) {
+        return NextResponse.json(
+          { error: "Not authenticated" },
+          { status: 401 }
+        );
+      }
+
+      // Verify user has access to this private book
+      if (book.userId !== session.user?.email) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
     }
 
     try {
-      if (!session.accessToken) {
+      // For public books, use direct download link instead of API
+      if (book.isPublic) {
+        console.log(
+          `📥 Redirecting to public Google Drive file: ${book.googleDriveId}`
+        );
+
+        // Create direct download URL for public files
+        const directUrl = `https://drive.google.com/uc?id=${book.googleDriveId}&export=download`;
+
+        // Redirect to the direct download URL
+        return NextResponse.redirect(directUrl);
+      }
+
+      // For private books, use authenticated download
+      const session = await getServerSession(authOptions);
+
+      if (!session?.accessToken) {
         return NextResponse.json(
           {
             error:
