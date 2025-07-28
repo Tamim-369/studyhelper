@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { GoogleDriveService } from "@/lib/googleDrive";
 import connectDB from "@/lib/db/connection";
 import Book from "@/lib/db/models/Book";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.accessToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
