@@ -12,7 +12,7 @@ const BookSchema = new Schema<BookDocument>(
     },
     author: {
       type: String,
-      required: true,
+      default: "Unknown Author",
       trim: true,
     },
     description: {
@@ -25,7 +25,7 @@ const BookSchema = new Schema<BookDocument>(
     },
     filePath: {
       type: String,
-      required: true,
+      required: false, // Not required for Google Drive files
     },
     fileSize: {
       type: Number,
@@ -33,7 +33,7 @@ const BookSchema = new Schema<BookDocument>(
     },
     totalPages: {
       type: Number,
-      required: true,
+      default: 0,
     },
     uploadedBy: {
       type: String,
@@ -56,6 +56,36 @@ const BookSchema = new Schema<BookDocument>(
     thumbnail: {
       type: String,
       default: null,
+    },
+    // Google Drive specific fields
+    googleDriveId: {
+      type: String,
+      required: false,
+    },
+    downloadLink: {
+      type: String,
+      required: false,
+    },
+    viewLink: {
+      type: String,
+      required: false,
+    },
+    directLink: {
+      type: String,
+      required: false,
+    },
+    storageType: {
+      type: String,
+      enum: ["local", "google-drive"],
+      default: "local",
+    },
+    userId: {
+      type: String,
+      required: false,
+    },
+    mimeType: {
+      type: String,
+      default: "application/pdf",
     },
   },
   {

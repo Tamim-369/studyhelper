@@ -18,7 +18,7 @@ export interface Book {
   author: string;
   description?: string;
   fileName: string;
-  filePath: string;
+  filePath?: string; // Optional for Google Drive files
   fileSize: number;
   totalPages: number;
   uploadedBy: string;
@@ -26,6 +26,14 @@ export interface Book {
   isPublic: boolean;
   tags: string[];
   thumbnail?: string;
+  // Google Drive specific fields
+  googleDriveId?: string;
+  downloadLink?: string;
+  viewLink?: string;
+  directLink?: string;
+  storageType?: "local" | "google-drive";
+  userId?: string;
+  mimeType?: string;
 }
 
 // Highlight Types
