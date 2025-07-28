@@ -15,11 +15,29 @@ const nextConfig = {
     ];
   },
 
-  // Configure API routes for large file uploads
-  experimental: {
-    // Increase body size limit for file uploads
-    isrMemoryCacheSize: 0, // Disable ISR memory cache to save memory for large uploads
+  // Configure webpack for PDF.js compatibility
+  webpack: (config, { isServer }) => {
+    // Ignore canvas module for client-side builds (PDF.js compatibility)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+        path: false,
+      };
+    }
+
+    // Handle PDF.js worker
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "pdfjs-dist/build/pdf.worker.js": "pdfjs-dist/build/pdf.worker.min.js",
+    };
+
+    return config;
   },
+
+  // Configure external packages
+  serverExternalPackages: ["canvas"],
 };
 
 module.exports = nextConfig;
