@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
 
     if (!session.accessToken) {
       return NextResponse.json(
-        { error: "Google Drive access token not available. Please sign in again." },
+        {
+          error:
+            "Google Drive access token not available. Please sign in again.",
+        },
         { status: 401 }
       );
     }
@@ -48,13 +51,15 @@ export async function POST(request: NextRequest) {
     }
 
     const fileSizeMB = file.size / 1024 / 1024;
-    console.log(`📊 Uploading to Google Drive: ${file.name} (${fileSizeMB.toFixed(2)} MB)`);
+    console.log(
+      `📊 Uploading to Google Drive: ${file.name} (${fileSizeMB.toFixed(2)} MB)`
+    );
 
     // Convert file to buffer
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     // Upload to Google Drive
-    const googleDriveService = new GoogleDriveService();
+    const googleDriveService = new GoogleDriveService(session.accessToken);
     const uploadResult = await googleDriveService.uploadPDF(
       fileBuffer,
       file.name,

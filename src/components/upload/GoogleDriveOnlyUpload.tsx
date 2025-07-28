@@ -93,7 +93,7 @@ export default function GoogleDriveOnlyUpload() {
 
       // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
-      
+
       const uploadPromise = new Promise((resolve, reject) => {
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable) {
@@ -163,9 +163,9 @@ export default function GoogleDriveOnlyUpload() {
         <HardDrive className="h-16 w-16 mx-auto mb-4 text-green-500" />
         <h2 className="text-2xl font-bold mb-4">Upload to Google Drive</h2>
         <p className="text-gray-600 mb-6">
-          Sign in to upload your PDF files directly to Google Drive<br/>
-          <span className="text-sm">• Supports files up to 2GB</span><br/>
-          <span className="text-sm">• 15GB free storage</span><br/>
+          Sign in to upload your PDF files directly to Google Drive<br />
+          <span className="text-sm">• Supports files up to 2GB</span><br />
+          <span className="text-sm">• 15GB free storage</span><br />
           <span className="text-sm">• Access from anywhere</span>
         </p>
         <Button onClick={() => signIn('google')} size="lg">
@@ -189,12 +189,12 @@ export default function GoogleDriveOnlyUpload() {
       {/* Upload Section */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-semibold mb-4">Upload PDF File</h2>
-        
+
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-lg mb-2">Choose a PDF file to upload</p>
           <p className="text-sm text-gray-500 mb-4">Maximum file size: 2GB • Direct to Google Drive</p>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -203,7 +203,7 @@ export default function GoogleDriveOnlyUpload() {
             disabled={uploading}
             className="hidden"
           />
-          
+
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
@@ -221,7 +221,7 @@ export default function GoogleDriveOnlyUpload() {
               </>
             )}
           </Button>
-          
+
           {/* Progress Bar */}
           {uploading && (
             <div className="mt-4">
@@ -230,8 +230,8 @@ export default function GoogleDriveOnlyUpload() {
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-green-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
@@ -265,7 +265,7 @@ export default function GoogleDriveOnlyUpload() {
               )}
             </Button>
           </div>
-          
+
           {loadingBooks ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -285,7 +285,7 @@ export default function GoogleDriveOnlyUpload() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-lg">{book.title}</h4>
-                        <HardDrive className="h-4 w-4 text-green-500" title="Google Drive" />
+                        <HardDrive className="h-4 w-4 text-green-500" />
                       </div>
                       <p className="text-sm text-gray-600">by {book.author}</p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
@@ -295,7 +295,7 @@ export default function GoogleDriveOnlyUpload() {
                         <span>Google Drive</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"

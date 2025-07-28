@@ -41,35 +41,38 @@ export async function GET(
     }
 
     try {
-      // Get file from Google Drive
-      const driveService = new GoogleDriveService(
-        session.accessToken as string
+      if (!session.accessToken) {
+        return NextResponse.json(
+          {
+            error:
+              "Google Drive access token not available. Please sign in again.",
+          },
+          { status: 401 }
+        );
+      }
+
+      // Get PDF from Google Drive
+      console.log("📥 Streaming PDF from Google Drive:", book.googleDriveId);
+
+      const googleDriveService = new GoogleDriveService(session.accessToken);
+      const pdfData = await googleDriveService.downloadFile(
+        book.googleDriveId,
+        session.accessToken
       );
-      const fileStream = await driveService.downloadFile(book.googleDriveId);
 
-      // Convert Node.js Readable to Web ReadableStream
-      const readableStream = new ReadableStream({
-        start(controller) {
-          fileStream.on("data", (chunk: Buffer) => {
-            controller.enqueue(new Uint8Array(chunk));
-          });
-
-          fileStream.on("end", () => {
-            controller.close();
-          });
-
-          fileStream.on("error", (error: Error) => {
-            controller.error(error);
-          });
-        },
-      });
+      // Convert to Buffer for consistent handling
+      const pdfBuffer = Buffer.isBuffer(pdfData)
+        ? pdfData
+        : Buffer.from(pdfData as ArrayBuffer);
 
       // Return the PDF stream
-      return new NextResponse(readableStream, {
+      return new NextResponse(pdfBuffer, {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `inline; filename="${book.fileName}"`,
           "Cache-Control": "private, max-age=3600", // Cache for 1 hour
+          "Content-Length": pdfBuffer.length.toString(),
+          "X-Storage-Type": "google-drive", // Debug header
         },
       });
     } catch (driveError: any) {
