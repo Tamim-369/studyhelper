@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AppStore, User, Book, Highlight, PDFViewerState } from "@/types";
+import { AppStore, PDFViewerState } from "@/types";
 
 const initialPDFViewerState: PDFViewerState = {
   currentPage: 1,
@@ -12,7 +12,7 @@ const initialPDFViewerState: PDFViewerState = {
 
 export const useAppStore = create<AppStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // User state (simplified - no authentication)
       user: null,
       setUser: (user) => set({ user }),
