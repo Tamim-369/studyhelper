@@ -4,8 +4,8 @@ import connectDB from "@/lib/db/connection";
 import Book from "@/lib/db/models/Book";
 import { authOptions } from "@/lib/auth";
 
-// Admin email - only this user can access admin functions
-const ADMIN_EMAIL = 'ashiqurrahmantamim369@gmail.com';
+// Admin access - now open to everyone
+// const ADMIN_EMAIL = 'ashiqurrahmantamim369@gmail.com';
 
 // Extract Google Drive file ID from various URL formats
 function extractGoogleDriveFileId(url: string): string | null {
@@ -37,9 +37,9 @@ async function getPublicFileInfo(fileId: string) {
     const response = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,size,mimeType&key=${process.env.GOOGLE_API_KEY}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       }
     );
@@ -51,7 +51,7 @@ async function getPublicFileInfo(fileId: string) {
     const fileData = await response.json();
     return fileData;
   } catch (error) {
-    console.error('Error getting public file info:', error);
+    console.error("Error getting public file info:", error);
     throw error;
   }
 }
@@ -65,10 +65,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Check if user is admin
-    if (session.user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: "Access denied. Admin privileges required." }, { status: 403 });
-    }
+    // Admin access now open to everyone
+    // if (session.user.email !== ADMIN_EMAIL) {
+    //   return NextResponse.json(
+    //     { error: "Access denied. Admin privileges required." },
+    //     { status: 403 }
+    //   );
+    // }
 
     const body = await request.json();
     const { driveUrl, title, author, description } = body;
@@ -84,7 +87,10 @@ export async function POST(request: NextRequest) {
     const fileId = extractGoogleDriveFileId(driveUrl);
     if (!fileId) {
       return NextResponse.json(
-        { error: "Invalid Google Drive URL. Please provide a valid Google Drive file link." },
+        {
+          error:
+            "Invalid Google Drive URL. Please provide a valid Google Drive file link.",
+        },
         { status: 400 }
       );
     }
@@ -95,21 +101,23 @@ export async function POST(request: NextRequest) {
     try {
       // Get file info (works for public files)
       const fileInfo = await getPublicFileInfo(fileId);
-      
+
       // Validate that it's a PDF file
-      if (fileInfo.mimeType !== 'application/pdf') {
+      if (fileInfo.mimeType !== "application/pdf") {
         return NextResponse.json(
           { error: `File is not a PDF. Found: ${fileInfo.mimeType}` },
           { status: 400 }
         );
       }
 
-      console.log(`✅ File validated: ${fileInfo.name} (${fileInfo.size} bytes)`);
+      console.log(
+        `✅ File validated: ${fileInfo.name} (${fileInfo.size} bytes)`
+      );
 
       // Check if this file is already in our database
       await connectDB();
-      const existingBook = await Book.findOne({ 
-        googleDriveId: fileId
+      const existingBook = await Book.findOne({
+        googleDriveId: fileId,
       });
 
       if (existingBook) {
@@ -176,16 +184,17 @@ export async function POST(request: NextRequest) {
           isExisting: false,
         },
       });
-
     } catch (fileError: any) {
       console.error("❌ Error accessing Google Drive file:", fileError);
-      
+
       return NextResponse.json(
-        { error: "Failed to access Google Drive file. Please ensure the file is publicly accessible or the link is correct." },
+        {
+          error:
+            "Failed to access Google Drive file. Please ensure the file is publicly accessible or the link is correct.",
+        },
         { status: 500 }
       );
     }
-
   } catch (error: any) {
     console.error("❌ Error processing Google Drive link:", error);
     return NextResponse.json(

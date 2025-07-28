@@ -20,8 +20,8 @@ interface ProcessedBook {
   isExisting: boolean;
 }
 
-// Admin email - only this user can access admin functions
-const ADMIN_EMAIL = 'ashiqurrahmantamim369@gmail.com';
+// Admin access - now open to everyone
+// const ADMIN_EMAIL = 'ashiqurrahmantamim369@gmail.com';
 
 export default function AdminUploadPage() {
   const { data: session, status } = useSession();
@@ -43,7 +43,7 @@ export default function AdminUploadPage() {
 
   const handleProcessLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!driveUrl.trim()) {
       setError('Please enter a Google Drive URL');
       return;
@@ -82,7 +82,7 @@ export default function AdminUploadPage() {
       if (result.success) {
         setProcessedBook(result.data);
         setError('');
-        
+
         // Clear form
         setDriveUrl('');
         setTitle('');
@@ -129,32 +129,33 @@ export default function AdminUploadPage() {
     );
   }
 
-  if (session.user?.email !== ADMIN_EMAIL) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Shield className="h-16 w-16 mx-auto mb-4 text-red-500" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-gray-600">You don't have permission to access this page.</p>
-          <p className="text-sm text-gray-500 mt-2">Admin access required.</p>
-        </div>
-      </div>
-    );
-  }
+  // Admin access now open to everyone
+  // if (session.user?.email !== ADMIN_EMAIL) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <div className="text-center">
+  //         <Shield className="h-16 w-16 mx-auto mb-4 text-red-500" />
+  //         <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+  //         <p className="text-gray-600">You don't have permission to access this page.</p>
+  //         <p className="text-sm text-gray-500 mt-2">Admin access required.</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-2xl mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="text-center">
-          <Shield className="h-12 w-12 mx-auto mb-4 text-green-600" />
-          <h1 className="text-3xl font-bold mb-2">Admin Book Upload</h1>
+          <Shield className="h-12 w-12 mx-auto mb-4 text-blue-600" />
+          <h1 className="text-3xl font-bold mb-2">Add Books to Library</h1>
           <p className="text-gray-600">
-            Add books to the library via Google Drive links
+            Add books to the public library via Google Drive links
           </p>
-          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <Shield className="h-3 w-3 mr-1" />
-            Admin Access
+            Open Access
           </div>
         </div>
 
