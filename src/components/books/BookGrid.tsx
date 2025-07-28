@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, Grid, List } from 'lucide-react';
+import { Search, Filter, Grid, List, BookOpen } from 'lucide-react';
 import BookCard from './BookCard';
 import { Book } from '@/types';
 
@@ -23,12 +23,12 @@ interface BookGridProps {
   isLoading?: boolean;
 }
 
-export default function BookGrid({ 
-  books, 
-  onEdit, 
-  onDelete, 
+export default function BookGrid({
+  books,
+  onEdit,
+  onDelete,
   showActions = false,
-  isLoading = false 
+  isLoading = false
 }: BookGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('uploadedAt');
@@ -43,13 +43,13 @@ export default function BookGrid({
   // Filter and sort books
   const filteredBooks = books
     .filter(book => {
-      const matchesSearch = 
+      const matchesSearch =
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (book.description?.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+
       const matchesTag = filterTag === 'all' || book.tags?.includes(filterTag);
-      
+
       return matchesSearch && matchesTag;
     })
     .sort((a, b) => {
@@ -76,7 +76,7 @@ export default function BookGrid({
           <div className="h-10 bg-muted rounded-md w-40 animate-pulse" />
           <div className="h-10 bg-muted rounded-md w-32 animate-pulse" />
         </div>
-        
+
         {/* Loading skeleton for books */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -162,7 +162,7 @@ export default function BookGrid({
         <p className="text-sm text-muted-foreground">
           {filteredBooks.length} book{filteredBooks.length !== 1 ? 's' : ''} found
         </p>
-        
+
         {filterTag !== 'all' && (
           <Badge variant="secondary" className="flex items-center gap-1">
             <Filter className="h-3 w-3" />
@@ -177,7 +177,7 @@ export default function BookGrid({
           <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No books found</h3>
           <p className="text-muted-foreground">
-            {searchQuery || filterTag !== 'all' 
+            {searchQuery || filterTag !== 'all'
               ? 'Try adjusting your search or filters'
               : 'No books have been uploaded yet'
             }
@@ -185,7 +185,7 @@ export default function BookGrid({
         </div>
       ) : (
         <div className={
-          viewMode === 'grid' 
+          viewMode === 'grid'
             ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             : "space-y-4"
         }>

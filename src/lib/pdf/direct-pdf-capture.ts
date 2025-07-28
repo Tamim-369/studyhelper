@@ -358,7 +358,10 @@ async function extractTextFromScreenshotOCR(
 /**
  * Get context from surrounding pages
  */
-async function getPDFContext(pdfUrl: string, pageNumber: number): string {
+async function getPDFContext(
+  pdfUrl: string,
+  pageNumber: number
+): Promise<string> {
   try {
     const loadingTask = pdfjsLib.getDocument(pdfUrl);
     const pdf = await loadingTask.promise;

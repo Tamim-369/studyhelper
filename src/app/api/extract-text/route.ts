@@ -32,7 +32,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Text extraction error:", error);
     return NextResponse.json(
-      { error: "Text extraction failed", details: error.message },
+      {
+        error: "Text extraction failed",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

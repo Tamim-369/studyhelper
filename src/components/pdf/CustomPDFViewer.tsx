@@ -27,6 +27,7 @@ if (typeof window !== 'undefined') {
 interface CustomPDFViewerProps {
     fileUrl: string;
     title?: string;
+
     bookId?: string;
     onPageChange?: (pageNumber: number) => void;
     onTextSelect?: (extractedText: any) => void;
@@ -40,9 +41,7 @@ interface CustomPDFViewerProps {
 export default function CustomPDFViewer({
     fileUrl,
     title = 'PDF Document',
-    bookId,
     onPageChange,
-    onTextSelect,
     isSelecting = false,
     isExtracting = false,
     onToggleScreenshot,
@@ -190,6 +189,29 @@ export default function CustomPDFViewer({
         };
     }, []);
 
+    // Listen for fullscreen changes (when user presses Escape or uses browser controls)
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            const isCurrentlyFullscreen = !!(
+                document.fullscreenElement ||
+                (document as unknown as { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
+                (document as unknown as { msFullscreenElement?: Element }).msFullscreenElement
+            );
+            setIsFullscreen(isCurrentlyFullscreen);
+        };
+
+        // Add event listeners for different browsers
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+        };
+    }, []);
+
     // Navigation functions
     const goToPage = (pageNum: number) => {
         if (pageNum >= 1 && pageNum <= totalPages) {
@@ -243,8 +265,38 @@ export default function CustomPDFViewer({
     };
 
     // Other functions
-    const toggleFullscreen = () => {
-        setIsFullscreen(!isFullscreen);
+    const toggleFullscreen = async () => {
+        try {
+            if (!isFullscreen) {
+                // Enter fullscreen
+                if (containerRef.current?.requestFullscreen) {
+                    await containerRef.current.requestFullscreen();
+                } else if ((containerRef.current as unknown as { webkitRequestFullscreen?: () => Promise<void> })?.webkitRequestFullscreen) {
+                    // Safari support
+                    await (containerRef.current as unknown as { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+                } else if ((containerRef.current as unknown as { msRequestFullscreen?: () => Promise<void> })?.msRequestFullscreen) {
+                    // IE/Edge support
+                    await (containerRef.current as unknown as { msRequestFullscreen: () => Promise<void> }).msRequestFullscreen();
+                }
+                setIsFullscreen(true);
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if ((document as unknown as { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+                    // Safari support
+                    await (document as unknown as { webkitExitFullscreen: () => Promise<void> }).webkitExitFullscreen();
+                } else if ((document as unknown as { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) {
+                    // IE/Edge support
+                    await (document as unknown as { msExitFullscreen: () => Promise<void> }).msExitFullscreen();
+                }
+                setIsFullscreen(false);
+            }
+        } catch (error) {
+            console.error('Fullscreen toggle failed:', error);
+            // Fallback to CSS-only fullscreen if browser API fails
+            setIsFullscreen(!isFullscreen);
+        }
     };
 
     const downloadPDF = () => {
@@ -312,7 +364,7 @@ export default function CustomPDFViewer({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [currentPage, totalPages]);
+    }, [currentPage, totalPages, goToPage, nextPage, prevPage, toggleFullscreen]);
 
     if (error) {
         return (

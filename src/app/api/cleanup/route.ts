@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     console.log("🧹 Cleanup requested:", { screenshotUrl, explanationId });
 
-    let cleanupResults = {
+    const cleanupResults = {
       screenshotDeleted: false,
       explanationDeleted: false,
       errors: [] as string[],
@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error("❌ Error deleting screenshot:", error);
         cleanupResults.errors.push(
-          `Screenshot deletion failed: ${error.message}`
+          `Screenshot deletion failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
         );
       }
     }
@@ -67,7 +69,9 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error("❌ Error deleting AI explanation:", error);
         cleanupResults.errors.push(
-          `Database deletion failed: ${error.message}`
+          `Database deletion failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`
         );
       }
     }
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: "Cleanup failed",
-        details: error.message,
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

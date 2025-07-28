@@ -7,10 +7,8 @@ import {
     Camera,
     Loader2,
     CheckCircle,
-    AlertCircle,
     Square,
-    X,
-    Maximize2
+    X
 } from 'lucide-react';
 
 interface ScreenshotCaptureProps {
