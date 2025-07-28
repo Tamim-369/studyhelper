@@ -170,8 +170,31 @@ export class GoogleDriveService {
     }
   }
 
-  async downloadFile(fileId: string) {
+  async downloadFile(fileId: string, accessToken?: string) {
     try {
+      // If accessToken is provided, create a new auth instance
+      if (accessToken) {
+        const tempAuth = new google.auth.OAuth2(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET
+        );
+        tempAuth.setCredentials({ access_token: accessToken });
+        const tempDrive = google.drive({ version: "v3", auth: tempAuth });
+
+        const response = await tempDrive.files.get(
+          {
+            fileId,
+            alt: "media",
+          },
+          {
+            responseType: "arraybuffer",
+          }
+        );
+
+        console.log("📥 Downloading file from Google Drive:", fileId);
+        return response.data;
+      }
+
       const response = await this.drive.files.get(
         {
           fileId,
@@ -186,6 +209,60 @@ export class GoogleDriveService {
       return response.data;
     } catch (error) {
       this.handleError(error, "download file");
+    }
+  }
+
+  // Upload PDF specifically with better handling for large files
+  async uploadPDF(fileBuffer: Buffer, fileName: string, accessToken: string) {
+    try {
+      // Create a new auth instance with the provided access token
+      const auth = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET
+      );
+      auth.setCredentials({ access_token: accessToken });
+      const drive = google.drive({ version: "v3", auth });
+
+      const fileMetadata = {
+        name: fileName,
+        parents: process.env.GOOGLE_DRIVE_FOLDER_ID
+          ? [process.env.GOOGLE_DRIVE_FOLDER_ID]
+          : undefined,
+      };
+
+      const media = {
+        mimeType: "application/pdf",
+        body: Readable.from(fileBuffer),
+      };
+
+      console.log(
+        `📤 Uploading PDF to Google Drive: ${fileName} (${(
+          fileBuffer.length /
+          1024 /
+          1024
+        ).toFixed(2)} MB)`
+      );
+
+      const response = await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: "id,name,webViewLink,webContentLink,size",
+        // Enable resumable uploads for large files
+        uploadType: "resumable",
+      });
+
+      console.log("✅ PDF uploaded successfully:", response.data.id);
+
+      return {
+        id: response.data.id!,
+        name: response.data.name!,
+        downloadLink: response.data.webContentLink!,
+        viewLink: response.data.webViewLink!,
+        directLink: `https://drive.google.com/uc?id=${response.data.id}&export=download`,
+        size: response.data.size,
+      };
+    } catch (error) {
+      this.handleError(error, "upload PDF");
     }
   }
 }

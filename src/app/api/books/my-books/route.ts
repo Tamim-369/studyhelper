@@ -18,12 +18,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const search = searchParams.get("search") || "";
+    const storageType = searchParams.get("storageType") || ""; // Filter by storage type
 
-    // Build query for user's Google Drive books only
+    // Build query for user's books
     const query: any = {
       userId: session.user.email,
-      storageType: "google-drive",
     };
+
+    // Add storage type filter if specified
+    if (storageType && ["cloudinary", "google-drive"].includes(storageType)) {
+      query.storageType = storageType;
+    }
 
     if (search) {
       query.$or = [
@@ -44,6 +49,17 @@ export async function GET(request: NextRequest) {
 
     const total = await Book.countDocuments(query);
 
+    // Add storage type counts for UI
+    const storageCounts = await Book.aggregate([
+      { $match: { userId: session.user.email } },
+      { $group: { _id: "$storageType", count: { $sum: 1 } } }
+    ]);
+
+    const counts = storageCounts.reduce((acc: any, item: any) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
     return NextResponse.json({
       success: true,
       data: {
@@ -54,10 +70,15 @@ export async function GET(request: NextRequest) {
           total,
           pages: Math.ceil(total / limit),
         },
+        storageCounts: {
+          total,
+          cloudinary: counts.cloudinary || 0,
+          "google-drive": counts["google-drive"] || 0,
+        },
       },
     });
   } catch (error) {
-    console.error("Error fetching user's Google Drive books:", error);
+    console.error("Error fetching user's books:", error);
     return NextResponse.json(
       { error: "Failed to fetch books" },
       { status: 500 }

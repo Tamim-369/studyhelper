@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
 import connectDB from "@/lib/db/connection";
 import Book from "@/lib/db/models/Book";
-import { authOptions } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -19,10 +11,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const search = searchParams.get("search") || "";
 
-    // Build query for user's Google Drive books only
+    // Build query for all Cloudinary books
     const query: any = {
-      userId: session.user.email,
-      storageType: "google-drive",
+      storageType: "cloudinary",
     };
 
     if (search) {
@@ -57,7 +48,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching user's Google Drive books:", error);
+    console.error("Error fetching user's Cloudinary books:", error);
     return NextResponse.json(
       { error: "Failed to fetch books" },
       { status: 500 }

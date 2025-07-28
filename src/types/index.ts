@@ -26,12 +26,14 @@ export interface Book {
   isPublic: boolean;
   tags: string[];
   thumbnail?: string;
-  // Google Drive specific fields
+  // Cloud storage specific fields
   googleDriveId?: string;
   downloadLink?: string;
   viewLink?: string;
   directLink?: string;
-  storageType?: "local" | "google-drive";
+  cloudinaryId?: string;
+  cloudinaryUrl?: string;
+  storageType?: "local" | "google-drive" | "cloudinary";
   userId?: string;
   mimeType?: string;
 }

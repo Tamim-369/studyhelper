@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 *.pdf
+
+# uploads and temporary files
+uploads/
+temp/

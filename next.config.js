@@ -1,5 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Configure API routes for large file uploads
+  experimental: {
+    serverComponentsExternalPackages: ["canvas"],
+  },
+
+  // Configure body size limit for API routes
+  api: {
+    bodyParser: {
+      sizeLimit: "1gb", // Allow up to 1GB uploads
+    },
+  },
+
   // Configure static file serving
   async headers() {
     return [

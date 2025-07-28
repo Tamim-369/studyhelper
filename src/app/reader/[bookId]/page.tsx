@@ -223,7 +223,7 @@ export default function PDFReaderPage() {
           {/* PDF Content Area */}
           <div className="flex-1 overflow-hidden">
             <SimplePDFViewer
-              fileUrl={`/api/files/pdfs/${book.fileName}`}
+              fileUrl={`/api/books/drive-pdf/${bookId}`}
               title={book.title}
               bookId={bookId}
               onPageChange={handlePageChange}
