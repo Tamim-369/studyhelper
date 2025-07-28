@@ -1,9 +1,9 @@
 'use client';
 
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Download, Eye, Loader2, RefreshCw, HardDrive } from 'lucide-react';
+import { Upload, FileText, Download, Eye, Loader2, RefreshCw, HardDrive, AlertTriangle } from 'lucide-react';
 import { GoogleDriveClientService } from '@/lib/googleDriveClient';
 
 interface UploadedBook {
@@ -23,6 +23,8 @@ export default function GoogleDriveOnlyUpload() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedBooks, setUploadedBooks] = useState<UploadedBook[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(false);
+  const [needsReauth, setNeedsReauth] = useState(false);
+  const [authMessage, setAuthMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatFileSize = (bytes: number) => {
@@ -31,6 +33,27 @@ export default function GoogleDriveOnlyUpload() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Check if user needs to re-authenticate
+  const checkAuthStatus = async () => {
+    if (!session) return;
+
+    try {
+      const response = await fetch('/api/force-reauth', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setNeedsReauth(data.needsReauth);
+        setAuthMessage(data.message);
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setNeedsReauth(true);
+      setAuthMessage('Unable to verify authentication. Please sign out and sign in again.');
+    }
   };
 
   // Fetch user's existing Google Drive books
@@ -53,18 +76,26 @@ export default function GoogleDriveOnlyUpload() {
     }
   };
 
-  // Load existing books when user signs in
+  // Load existing books and check auth when user signs in
   useEffect(() => {
     if (session) {
+      checkAuthStatus();
       fetchExistingBooks();
     } else {
       setUploadedBooks([]);
+      setNeedsReauth(false);
+      setAuthMessage('');
     }
   }, [session]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (needsReauth) {
+      alert('Please sign out and sign in again before uploading files.');
+      return;
+    }
 
     if (file.type !== 'application/pdf') {
       alert('Please select a PDF file');
@@ -232,6 +263,40 @@ export default function GoogleDriveOnlyUpload() {
         </p>
       </div>
 
+      {/* Re-authentication Warning */}
+      {needsReauth && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-yellow-800 mb-1">
+                Re-authentication Required
+              </h3>
+              <p className="text-sm text-yellow-700 mb-3">
+                {authMessage}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => signOut()}
+                  variant="outline"
+                  size="sm"
+                  className="border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                >
+                  Sign Out
+                </Button>
+                <Button
+                  onClick={() => signIn('google')}
+                  size="sm"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Sign In Again
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upload Section */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-semibold mb-4">Upload PDF File</h2>
@@ -252,7 +317,7 @@ export default function GoogleDriveOnlyUpload() {
 
           <Button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={uploading || needsReauth}
             size="lg"
           >
             {uploading ? (
