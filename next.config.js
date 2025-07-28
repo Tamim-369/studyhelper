@@ -17,21 +17,46 @@ const nextConfig = {
 
   // Configure webpack for PDF.js compatibility
   webpack: (config, { isServer }) => {
-    // Ignore canvas module for client-side builds (PDF.js compatibility)
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        canvas: false,
-        fs: false,
-        path: false,
-      };
+    // Configure fallbacks for both client and server
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      canvas: false,
+      fs: false,
+      path: false,
+      crypto: false,
+      stream: false,
+      util: false,
+      buffer: false,
+    };
+
+    // Add externals for server-side rendering
+    if (isServer) {
+      config.externals = [...(config.externals || []), "canvas"];
     }
 
-    // Handle PDF.js worker
+    // Handle PDF.js worker and canvas module
     config.resolve.alias = {
       ...config.resolve.alias,
       "pdfjs-dist/build/pdf.worker.js": "pdfjs-dist/build/pdf.worker.min.js",
+      canvas: false,
     };
+
+    // Ignore canvas module completely and replace with stub
+    const webpack = require("webpack");
+    config.plugins = [
+      ...config.plugins,
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^canvas$/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /canvas/,
+        contextRegExp: /pdfjs-dist/,
+      }),
+      new webpack.NormalModuleReplacementPlugin(
+        /^canvas$/,
+        require.resolve("./canvas-stub.js")
+      ),
+    ];
 
     return config;
   },

@@ -17,9 +17,10 @@ import {
     Minimize
 } from 'lucide-react';
 import ScreenshotCapture from './ScreenshotCapture';
+// Import PDF.js with proper client-side handling
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker
+// Configure PDF.js worker only on client side
 if (typeof window !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 }
@@ -68,6 +69,7 @@ export default function CustomPDFViewer({
                 setError(null);
 
                 console.log('Loading PDF:', fileUrl);
+
                 const loadingTask = pdfjsLib.getDocument(fileUrl);
                 const pdfDoc = await loadingTask.promise;
 
