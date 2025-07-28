@@ -4,6 +4,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, Download, Eye, Loader2, RefreshCw, HardDrive } from 'lucide-react';
+import { GoogleDriveClientService } from '@/lib/googleDriveClient';
 
 interface UploadedBook {
   _id: string;
@@ -70,10 +71,10 @@ export default function GoogleDriveOnlyUpload() {
       return;
     }
 
-    // Check file size (10MB limit for Vercel hobby plan)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Check file size (Google Drive supports up to 5TB)
+    const maxSize = 5 * 1024 * 1024 * 1024 * 1024; // 5TB (Google Drive limit)
     if (file.size > maxSize) {
-      alert(`File size exceeds 10MB limit. Please use a smaller file or upgrade to Vercel Pro for larger uploads.`);
+      alert(`File size exceeds Google Drive's 5TB limit. Please use a smaller file.`);
       return;
     }
 
@@ -85,40 +86,40 @@ export default function GoogleDriveOnlyUpload() {
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', file.name.replace('.pdf', ''));
-      formData.append('author', 'Unknown');
-      formData.append('description', '');
+      const sessionWithToken = session as any;
+      if (!sessionWithToken?.accessToken) {
+        alert('Google Drive access token not available. Please sign in again.');
+        return;
+      }
 
-      // Create XMLHttpRequest for progress tracking
-      const xhr = new XMLHttpRequest();
+      // Upload directly to Google Drive from browser
+      const driveService = new GoogleDriveClientService(sessionWithToken.accessToken);
 
-      const uploadPromise = new Promise((resolve, reject) => {
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const progress = Math.round((event.loaded / event.total) * 100);
-            setUploadProgress(progress);
-          }
-        });
-
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.responseText}`));
-          }
-        });
-
-        xhr.addEventListener('error', () => {
-          reject(new Error('Upload failed'));
-        });
-
-        xhr.open('POST', '/api/upload-to-drive-only');
-        xhr.send(formData);
+      const uploadResult = await driveService.uploadFile(file, (progress) => {
+        setUploadProgress(progress);
       });
 
-      const result = await uploadPromise as any;
+      console.log('📤 Direct upload completed:', uploadResult);
+
+      // Save book metadata to our database
+      const metadataResponse = await fetch('/api/save-drive-book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          googleDriveId: uploadResult.id,
+          title: file.name.replace('.pdf', ''),
+          author: 'Unknown',
+          description: '',
+          fileName: file.name,
+          fileSize: file.size.toString(),
+          webViewLink: uploadResult.webViewLink,
+          webContentLink: uploadResult.webContentLink,
+        }),
+      });
+
+      const result = await metadataResponse.json();
 
       if (result.success) {
         alert('File uploaded successfully to Google Drive!');
@@ -171,8 +172,9 @@ export default function GoogleDriveOnlyUpload() {
         <h2 className="text-2xl font-bold mb-4">Upload to Google Drive</h2>
         <p className="text-gray-600 mb-6">
           Sign in to upload your PDF files directly to Google Drive<br />
-          <span className="text-sm">• Supports files up to 10MB (Vercel limit)</span><br />
+          <span className="text-sm">• Supports files up to 5TB (Google Drive limit)</span><br />
           <span className="text-sm">• 15GB free Google Drive storage</span><br />
+          <span className="text-sm">• Direct browser-to-Drive upload</span><br />
           <span className="text-sm">• Access from anywhere</span>
         </p>
         <Button onClick={() => signIn('google')} size="lg">
@@ -187,9 +189,9 @@ export default function GoogleDriveOnlyUpload() {
       {/* Header */}
       <div className="text-center">
         <HardDrive className="h-12 w-12 mx-auto mb-4 text-green-500" />
-        <h1 className="text-3xl font-bold mb-2">Google Drive Upload</h1>
+        <h1 className="text-3xl font-bold mb-2">Google Drive Direct Upload</h1>
         <p className="text-gray-600">
-          Upload your PDF files directly to Google Drive (up to 10MB each)
+          Upload your PDF files directly to Google Drive (up to 5TB each)
         </p>
       </div>
 
@@ -200,7 +202,7 @@ export default function GoogleDriveOnlyUpload() {
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-lg mb-2">Choose a PDF file to upload</p>
-          <p className="text-sm text-gray-500 mb-4">Maximum file size: 10MB • Direct to Google Drive</p>
+          <p className="text-sm text-gray-500 mb-4">Maximum file size: 5TB • Direct browser-to-Google Drive upload</p>
 
           <input
             ref={fileInputRef}
@@ -243,7 +245,7 @@ export default function GoogleDriveOnlyUpload() {
                 ></div>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Uploading directly to Google Drive...
+                Uploading directly to Google Drive (bypassing server limits)...
               </p>
             </div>
           )}
