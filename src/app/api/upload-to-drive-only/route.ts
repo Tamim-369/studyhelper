@@ -41,12 +41,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (Google Drive supports up to 5TB, but let's set a reasonable limit)
-    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB limit
+    // Validate file size for Vercel limits (10MB for hobby, 50MB for pro)
+    const maxSize = 10 * 1024 * 1024; // 10MB limit for Vercel hobby plan
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: `File size exceeds ${maxSize / 1024 / 1024 / 1024}GB limit` },
-        { status: 400 }
+        {
+          error: `File size exceeds ${
+            maxSize / 1024 / 1024
+          }MB limit. Please use files smaller than 10MB or upgrade to Vercel Pro for larger files.`,
+          maxSizeBytes: maxSize,
+          fileSizeBytes: file.size,
+        },
+        { status: 413 } // Payload Too Large
       );
     }
 

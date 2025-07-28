@@ -70,10 +70,10 @@ export default function GoogleDriveOnlyUpload() {
       return;
     }
 
-    // Check file size (2GB limit for Google Drive)
-    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+    // Check file size (10MB limit for Vercel hobby plan)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert('File size exceeds 2GB limit');
+      alert(`File size exceeds 10MB limit. Please use a smaller file or upgrade to Vercel Pro for larger uploads.`);
       return;
     }
 
@@ -124,7 +124,14 @@ export default function GoogleDriveOnlyUpload() {
         alert('File uploaded successfully to Google Drive!');
         fetchExistingBooks();
       } else {
-        alert(`Upload failed: ${result.error}`);
+        console.error('Upload failed:', result);
+        if (result.error?.includes('10MB limit')) {
+          alert(`Upload failed: File too large. Please use files smaller than 10MB.`);
+        } else if (result.error?.includes('413')) {
+          alert(`Upload failed: File size exceeds server limits. Please use a smaller file.`);
+        } else {
+          alert(`Upload failed: ${result.error || 'Unknown error occurred'}`);
+        }
       }
 
     } catch (error: any) {
@@ -164,8 +171,8 @@ export default function GoogleDriveOnlyUpload() {
         <h2 className="text-2xl font-bold mb-4">Upload to Google Drive</h2>
         <p className="text-gray-600 mb-6">
           Sign in to upload your PDF files directly to Google Drive<br />
-          <span className="text-sm">• Supports files up to 2GB</span><br />
-          <span className="text-sm">• 15GB free storage</span><br />
+          <span className="text-sm">• Supports files up to 10MB (Vercel limit)</span><br />
+          <span className="text-sm">• 15GB free Google Drive storage</span><br />
           <span className="text-sm">• Access from anywhere</span>
         </p>
         <Button onClick={() => signIn('google')} size="lg">
@@ -182,7 +189,7 @@ export default function GoogleDriveOnlyUpload() {
         <HardDrive className="h-12 w-12 mx-auto mb-4 text-green-500" />
         <h1 className="text-3xl font-bold mb-2">Google Drive Upload</h1>
         <p className="text-gray-600">
-          Upload your PDF files directly to Google Drive (up to 2GB each)
+          Upload your PDF files directly to Google Drive (up to 10MB each)
         </p>
       </div>
 
@@ -193,7 +200,7 @@ export default function GoogleDriveOnlyUpload() {
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <p className="text-lg mb-2">Choose a PDF file to upload</p>
-          <p className="text-sm text-gray-500 mb-4">Maximum file size: 2GB • Direct to Google Drive</p>
+          <p className="text-sm text-gray-500 mb-4">Maximum file size: 10MB • Direct to Google Drive</p>
 
           <input
             ref={fileInputRef}
