@@ -9,6 +9,8 @@ export const authOptions = {
         params: {
           scope:
             "openid email profile https://www.googleapis.com/auth/drive.file",
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     }),
@@ -25,6 +27,7 @@ export const authOptions = {
     async session({ session, token }: any) {
       // Send properties to the client
       session.accessToken = token.accessToken as string;
+      session.refreshToken = token.refreshToken as string;
       return session;
     },
   },

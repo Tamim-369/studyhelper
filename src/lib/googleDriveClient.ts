@@ -17,35 +17,47 @@ export class GoogleDriveClientService {
   }
 
   // Get upload URL for resumable uploads (supports large files)
-  async getResumableUploadUrl(fileName: string, fileSize: number): Promise<string> {
+  async getResumableUploadUrl(
+    fileName: string,
+    fileSize: number
+  ): Promise<string> {
     const metadata = {
       name: fileName,
-      parents: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID 
-        ? [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID] 
+      parents: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID
+        ? [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID]
         : undefined,
     };
 
+    console.log(
+      "🔑 Using access token for upload URL:",
+      this.accessToken ? "Token available" : "No token"
+    );
+
     const response = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable',
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json',
-          'X-Upload-Content-Type': 'application/pdf',
-          'X-Upload-Content-Length': fileSize.toString(),
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json",
+          "X-Upload-Content-Type": "application/pdf",
+          "X-Upload-Content-Length": fileSize.toString(),
         },
         body: JSON.stringify(metadata),
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get upload URL: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error("❌ Failed to get upload URL:", response.status, errorText);
+      throw new Error(
+        `Failed to get upload URL: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
-    const uploadUrl = response.headers.get('Location');
+    const uploadUrl = response.headers.get("Location");
     if (!uploadUrl) {
-      throw new Error('No upload URL returned from Google Drive');
+      throw new Error("No upload URL returned from Google Drive");
     }
 
     return uploadUrl;
@@ -56,7 +68,13 @@ export class GoogleDriveClientService {
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<GoogleDriveUploadResult> {
-    console.log(`🚀 Starting direct Google Drive upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+    console.log(
+      `🚀 Starting direct Google Drive upload: ${file.name} (${(
+        file.size /
+        1024 /
+        1024
+      ).toFixed(2)} MB)`
+    );
 
     // Get resumable upload URL
     const uploadUrl = await this.getResumableUploadUrl(file.name, file.size);
@@ -66,20 +84,25 @@ export class GoogleDriveClientService {
     let uploadedBytes = 0;
 
     while (uploadedBytes < file.size) {
-      const chunk = file.slice(uploadedBytes, Math.min(uploadedBytes + chunkSize, file.size));
+      const chunk = file.slice(
+        uploadedBytes,
+        Math.min(uploadedBytes + chunkSize, file.size)
+      );
       const isLastChunk = uploadedBytes + chunk.size >= file.size;
 
       const response = await fetch(uploadUrl, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Range': `bytes ${uploadedBytes}-${uploadedBytes + chunk.size - 1}/${file.size}`,
+          "Content-Range": `bytes ${uploadedBytes}-${
+            uploadedBytes + chunk.size - 1
+          }/${file.size}`,
         },
         body: chunk,
       });
 
       if (response.status === 308) {
         // Continue uploading
-        const range = response.headers.get('Range');
+        const range = response.headers.get("Range");
         if (range) {
           const rangeMatch = range.match(/bytes=0-(\d+)/);
           if (rangeMatch) {
@@ -91,8 +114,8 @@ export class GoogleDriveClientService {
       } else if (response.status === 200 || response.status === 201) {
         // Upload complete
         const result = await response.json();
-        console.log('✅ Upload completed successfully:', result.id);
-        
+        console.log("✅ Upload completed successfully:", result.id);
+
         return {
           id: result.id,
           name: result.name,
@@ -101,7 +124,9 @@ export class GoogleDriveClientService {
           webContentLink: result.webContentLink,
         };
       } else {
-        throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `Upload failed with status ${response.status}: ${response.statusText}`
+        );
       }
 
       // Report progress
@@ -111,7 +136,7 @@ export class GoogleDriveClientService {
       }
     }
 
-    throw new Error('Upload completed but no response received');
+    throw new Error("Upload completed but no response received");
   }
 
   // Simple upload for smaller files (under 5MB)
@@ -120,32 +145,44 @@ export class GoogleDriveClientService {
 
     const metadata = {
       name: file.name,
-      parents: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID 
-        ? [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID] 
+      parents: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID
+        ? [process.env.NEXT_PUBLIC_GOOGLE_DRIVE_FOLDER_ID]
         : undefined,
     };
 
     const form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', file);
+    form.append(
+      "metadata",
+      new Blob([JSON.stringify(metadata)], { type: "application/json" })
+    );
+    form.append("file", file);
+
+    console.log(
+      "🔑 Using access token for simple upload:",
+      this.accessToken ? "Token available" : "No token"
+    );
 
     const response = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,size,webViewLink,webContentLink',
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,size,webViewLink,webContentLink",
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
+          Authorization: `Bearer ${this.accessToken}`,
         },
         body: form,
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error("❌ Simple upload failed:", response.status, errorText);
+      throw new Error(
+        `Upload failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
     const result = await response.json();
-    console.log('✅ Simple upload completed:', result.id);
+    console.log("✅ Simple upload completed:", result.id);
 
     return {
       id: result.id,
@@ -162,7 +199,7 @@ export class GoogleDriveClientService {
     onProgress?: (progress: number) => void
   ): Promise<GoogleDriveUploadResult> {
     const fiveMB = 5 * 1024 * 1024;
-    
+
     if (file.size <= fiveMB) {
       return this.uploadFileSimple(file);
     } else {

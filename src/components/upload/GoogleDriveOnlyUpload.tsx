@@ -92,12 +92,49 @@ export default function GoogleDriveOnlyUpload() {
         return;
       }
 
-      // Upload directly to Google Drive from browser
-      const driveService = new GoogleDriveClientService(sessionWithToken.accessToken);
+      console.log('🔑 Starting upload with access token:', sessionWithToken.accessToken ? 'Available' : 'Missing');
 
-      const uploadResult = await driveService.uploadFile(file, (progress) => {
-        setUploadProgress(progress);
-      });
+      // Upload directly to Google Drive from browser
+      let accessToken = sessionWithToken.accessToken;
+      let driveService = new GoogleDriveClientService(accessToken);
+
+      let uploadResult;
+      try {
+        uploadResult = await driveService.uploadFile(file, (progress) => {
+          setUploadProgress(progress);
+        });
+      } catch (uploadError: any) {
+        console.error('❌ Upload failed, checking if token refresh needed:', uploadError.message);
+
+        // If we get a 401 error, try to refresh the token
+        if (uploadError.message.includes('401') || uploadError.message.includes('Unauthorized')) {
+          console.log('🔄 Attempting to refresh access token...');
+
+          try {
+            const refreshResponse = await fetch('/api/refresh-token', {
+              method: 'POST',
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              console.log('✅ Token refreshed, retrying upload...');
+
+              // Retry upload with new token
+              driveService = new GoogleDriveClientService(refreshData.accessToken);
+              uploadResult = await driveService.uploadFile(file, (progress) => {
+                setUploadProgress(progress);
+              });
+            } else {
+              throw new Error('Token refresh failed. Please sign in again.');
+            }
+          } catch (refreshError) {
+            console.error('❌ Token refresh failed:', refreshError);
+            throw new Error('Authentication expired. Please sign out and sign in again.');
+          }
+        } else {
+          throw uploadError;
+        }
+      }
 
       console.log('📤 Direct upload completed:', uploadResult);
 
